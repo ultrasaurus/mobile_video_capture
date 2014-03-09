@@ -15,7 +15,7 @@ get "/" do
   page += "<ul>"
   bucket = AWS::S3::Bucket.find(BUCKET_NAME)
   bucket.each do |object|
-      page += "<li>#{object.key}\t#{object.about['content-length']}\t#{object.about['last-modified']}</li>"
+      page += "<li><a href='http://mobile-video-capture-bucket.s3-website-us-east-1.amazonaws.com/#{object.key}'>#{object.key}</a>\t#{object.about['content-length']}\t#{object.about['last-modified']}</li>"
   end
   page += "<ul>"
 
@@ -44,5 +44,9 @@ def upload(filename, file)
     open(file.path),
     BUCKET_NAME
   )
+  policy = AWS::S3::S3Object.acl(filename, BUCKET_NAME)
+  policy.grants = [ AWS::S3::ACL::Grant.grant(:public_read) ]
+  AWS::S3::S3Object.acl(filename, BUCKET_NAME, policy)
+
   return filename
 end
