@@ -1,14 +1,25 @@
 require 'sinatra'
 require 'aws/s3'
 
+BUCKET_NAME = 'mobile-video-capture-bucket'
+
 get "/" do
-  "<h1>Hello World</h1>
+  connect
+  page = "<h1>Hello World</h1>
 <form action='/upload' method='post' accept-charset='utf-8' enctype='multipart/form-data'>
   <label for='content_file'>Image</label>
   <input type='file' name='content[file]' id='content_file' />
   <button type='submit'>Save</button>
-</form>
-"
+</form>"
+
+  page += "<ul>"
+  bucket = AWS::S3::Bucket.find(BUCKET_NAME)
+  bucket.each do |object|
+      page += "<li>#{object.key}\t#{object.about['content-length']}\t#{object.about['last-modified']}</li>"
+  end
+  page += "<ul>"
+
+  page
 end
 
 post '/upload' do
@@ -18,17 +29,20 @@ post '/upload' do
 end
 
 
-
-def upload(filename, file)
-  bucket = 'mobile-video-capture-bucket'
+def connect
   AWS::S3::Base.establish_connection!(
     :access_key_id     => ENV['S3_ACCESS_KEY_ID'],
     :secret_access_key => ENV['S3_SECRET_ACCESS_KEY']
   )
+end
+
+def upload(filename, file)
+  puts "----------------- upload -------------------"
+  connect
   AWS::S3::S3Object.store(
     filename,
     open(file.path),
-    bucket
+    BUCKET_NAME
   )
   return filename
 end
